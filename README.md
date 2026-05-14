@@ -224,7 +224,7 @@ composer install
 
 ---
 
-## 🏗️ Built With Love for Sri Lankan Developers
+## 🏗️ Built for Sri Lankan Developers
 
 This package is maintained by [Trishan](https://leadingedgesolutions.lk) — founder of [Leading Edge Solutions](https://leadingedgesolutions.lk) and builder of Sri Lankan SaaS products including [Ceylon Ledger](https://ceylonledger.lk).
 
