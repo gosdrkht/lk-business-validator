@@ -1,0 +1,40 @@
+{
+    "name": "trishanapp/lk-business-validator",
+    "description": "Validate Sri Lanka business data: NIC, BR numbers, phone numbers, postal codes, VAT/TIN, and more.",
+    "keywords": ["sri lanka", "validator", "nic", "business registration", "php", "laravel"],
+    "homepage": "https://github.com/trishanapp/lk-business-validator",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Trishan",
+            "email": "trishan@leadingedgesolutions.lk",
+            "homepage": "https://leadingedgesolutions.lk",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Trishanapp\\LkBusinessValidator\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Trishanapp\\LkBusinessValidator\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Trishanapp\\LkBusinessValidator\\LkValidatorServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
