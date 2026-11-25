@@ -3,41 +3,44 @@
 namespace Trishanapp\LkBusinessValidator\Validators;
 
 /**
- * Sri Lanka VAT / TIN Number Validator
- *
- * VAT Registration Number: 7 digits + '-' + 7000 (or similar suffix)
- * TIN (Taxpayer Identification Number): 9 or 10 digits
+ * Sri Lanka VAT / TIN Number Validator (Inland Revenue Department)
  *
  * Formats:
- *  - TIN:  123456789 or 1234567890
- *  - VAT:  123456789-7000 or 1234567890
+ *  - TIN: 9 or 10 digits (e.g. 123456789, 1234567890)
+ *  - VAT: TIN + '-7000' or '-7001' (e.g. 123456789-7000, 1234567897000, or plain TIN)
  */
 class VatValidator
 {
     /**
-     * Validate a Sri Lanka TIN number.
-     * TIN is 9 digits (old) or 10 digits (new/company).
+     * Validate a Sri Lanka TIN number (9 or 10 digits).
      */
     public static function validateTin(string $tin): bool
     {
-        $tin = preg_replace('/[\s\-]+/', '', trim($tin));
-        return (bool) preg_match('/^\d{9,10}$/', $tin);
+        $cleaned = preg_replace('/[\s\-]+/', '', trim($tin));
+
+        return (bool) preg_match('/^\d{9,10}$/', (string) $cleaned);
     }
 
     /**
      * Validate a Sri Lanka VAT registration number.
-     * Format: [9or10 digits]-7000
+     *
+     * Accepts:
+     *  - 9 or 10 digits with -7000 / -7001 suffix (e.g. 123456789-7000)
+     *  - 9 or 10 digits with 7000 / 7001 suffix without hyphen (e.g. 1234567897000)
+     *  - Plain 9 or 10 digit TIN (backwards-compatible)
      */
     public static function validateVat(string $vat): bool
     {
         $vat = strtoupper(trim($vat));
 
-        // With suffix: 123456789-7000
-        if (preg_match('/^\d{9,10}-7000$/', $vat)) {
+        if (preg_match('/^\d{9,10}-700[01]$/', $vat)) {
             return true;
         }
 
-        // Without suffix (just the TIN part)
+        if (preg_match('/^\d{9,10}700[01]$/', $vat)) {
+            return true;
+        }
+
         if (preg_match('/^\d{9,10}$/', $vat)) {
             return true;
         }
@@ -46,38 +49,77 @@ class VatValidator
     }
 
     /**
-     * Normalize VAT to standard format (with -7000 suffix).
+     * Extract the 9–10 digit TIN from a valid VAT or TIN number.
      */
-    public static function normalize(string $vat): ?string
+    public static function extractTin(string $value): ?string
     {
-        $vat = strtoupper(trim($vat));
-        $digits = preg_replace('/[^0-9]/', '', $vat);
+        $cleaned = strtoupper(trim($value));
 
-        if (!preg_match('/^\d{9,10}$/', $digits)) {
-            return null;
+        if (preg_match('/^(\d{9,10})-700[01]$/', $cleaned, $m)) {
+            return $m[1];
         }
 
-        return $digits . '-7000';
+        if (preg_match('/^(\d{9,10})700[01]$/', $cleaned, $m)) {
+            return $m[1];
+        }
+
+        if (self::validateTin($cleaned)) {
+            return preg_replace('/[\s\-]+/', '', $cleaned);
+        }
+
+        return null;
     }
 
     /**
-     * Parse VAT/TIN.
+     * Normalize VAT/TIN to standard VAT format (<tin>-7000 or <tin>-7001).
+     */
+    public static function normalize(string $value): ?string
+    {
+        $cleaned = strtoupper(trim($value));
+
+        if (preg_match('/^(\d{9,10})-(700[01])$/', $cleaned, $m)) {
+            return $m[1] . '-' . $m[2];
+        }
+
+        if (preg_match('/^(\d{9,10})(700[01])$/', $cleaned, $m)) {
+            return $m[1] . '-' . $m[2];
+        }
+
+        $tin = self::extractTin($cleaned);
+        if ($tin === null) {
+            return null;
+        }
+
+        return $tin . '-7000';
+    }
+
+    /**
+     * Parse VAT/TIN into details.
      *
-     * @return array{valid: bool, type: string|null, normalized: string|null}
+     * @return array{valid: bool, type: string|null, tin: string|null, normalized: string|null}
      */
     public static function parse(string $value): array
     {
-        $isVat = self::validateVat($value);
-        $isTin = self::validateTin($value);
+        $cleaned = strtoupper(trim($value));
+        $isVat = self::validateVat($cleaned);
+        $isTin = self::validateTin($cleaned);
 
         if (!$isVat && !$isTin) {
-            return ['valid' => false, 'type' => null, 'normalized' => null];
+            return [
+                'valid'      => false,
+                'type'       => null,
+                'tin'        => null,
+                'normalized' => null,
+            ];
         }
+
+        $hasVatSuffix = (bool) preg_match('/^\d{9,10}-?700[01]$/', $cleaned);
 
         return [
             'valid'      => true,
-            'type'       => str_contains($value, '-7000') ? 'VAT' : 'TIN',
-            'normalized' => self::normalize($value),
+            'type'       => $hasVatSuffix ? 'VAT' : 'TIN',
+            'tin'        => self::extractTin($cleaned),
+            'normalized' => self::normalize($cleaned),
         ];
     }
 }

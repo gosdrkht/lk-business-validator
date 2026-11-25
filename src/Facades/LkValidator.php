@@ -1,35 +1,48 @@
 <?php
 
-namespace Trishan\LkBusinessValidator\Facades;
+namespace Trishanapp\LkBusinessValidator\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Trishanapp\LkBusinessValidator\LkValidator as LkValidatorService;
 
 /**
- * @method static bool validateNic(string $nic)
- * @method static array|null nicDetails(string $nic)
- * @method static string|null nicGender(string $nic)
- * @method static string|null nicDob(string $nic)
- * @method static bool validatePhone(string $phone)
- * @method static bool validateMobile(string $phone)
- * @method static bool validateFixedLine(string $phone)
- * @method static string|null formatPhone(string $phone, string $style = 'local')
- * @method static string|null phoneCarrier(string $phone)
- * @method static bool validateBr(string $br)
- * @method static string|null brCompanyType(string $br)
- * @method static bool validateVat(string $vat)
- * @method static bool validateTin(string $tin)
- * @method static bool validateVatOrTin(string $value)
- * @method static string|null vatTinType(string $value)
- * @method static bool validatePostalCode(string $code)
- * @method static string|null postalDistrict(string $code)
- * @method static array validateAll(array $fields)
+ * @method static bool nic(string $nic)
+ * @method static array nicParse(string $nic)
+ * @method static string|null nicConvertToNew(string $nic)
+ * @method static bool phone(string $phone)
+ * @method static bool mobile(string $phone)
+ * @method static bool landline(string $phone)
+ * @method static array phoneParse(string $phone)
+ * @method static string|null phoneNormalize(string $phone)
+ * @method static string|null phoneToInternational(string $phone)
+ * @method static string|null phoneFormat(string $phone, string $style = 'local')
+ * @method static bool br(string $br)
+ * @method static array brParse(string $br)
+ * @method static string|null brNormalize(string $br)
+ * @method static bool postalCode(string|int $code)
+ * @method static array postalCodeParse(string|int $code)
+ * @method static bool vat(string $vat)
+ * @method static bool tin(string $tin)
+ * @method static array vatParse(string $value)
+ * @method static bool vehicle(string $plate)
+ * @method static array vehicleParse(string $plate)
+ * @method static string|null vehicleNormalize(string $plate)
+ * @method static bool passport(string $passport)
+ * @method static array passportParse(string $passport)
+ * @method static bool bankCode(string|int $code)
+ * @method static array bankCodeParse(string|int $code)
+ * @method static bool swift(string $swift)
+ * @method static bool bankAccount(string $accountNumber)
+ * @method static bool epf(string $value)
+ * @method static array epfParse(string $value)
+ * @method static array validateBatch(array $data)
  *
- * @see \Trishan\LkBusinessValidator\LkValidator
+ * @see \Trishanapp\LkBusinessValidator\LkValidator
  */
 class LkValidator extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return 'lk-validator';
+        return LkValidatorService::class;
     }
 }

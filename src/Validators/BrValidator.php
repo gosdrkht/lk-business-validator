@@ -5,13 +5,28 @@ namespace Trishanapp\LkBusinessValidator\Validators;
 /**
  * Sri Lanka Business Registration (BR) Number Validator
  *
- * Formats supported:
- *  - PV/PB/HP/SP/PR followed by digits  (e.g. PV00123456)
- *  - Department of Registrar of Companies format
+ * Supports Department of Registrar of Companies (DRC) and business registration prefixes:
+ *  PV, PB, HP, FC, SP, PR, GN, GA, GL, SC, CS, NA
+ *  with optional '/', '-', or space separators (e.g. PV00123456, PV/00123456, PV-12345).
  */
 class BrValidator
 {
-    const PREFIXES = ['PV', 'PB', 'HP', 'SP', 'PR', 'GN', 'SC'];
+    public const TYPES = [
+        'PV' => 'Private Limited Company',
+        'PB' => 'Public Company',
+        'HP' => 'Foreign Company (Branch)',
+        'FC' => 'Overseas Company',
+        'SP' => 'Sole Proprietorship',
+        'PR' => 'Partnership',
+        'GN' => 'Guarantee Company',
+        'GA' => 'Guarantee Company',
+        'GL' => 'Company Limited by Guarantee',
+        'SC' => 'Unlimited Company',
+        'CS' => 'Consumer Society',
+        'NA' => 'Non-Profit Association',
+    ];
+
+    public const PREFIXES = ['PV', 'PB', 'HP', 'FC', 'SP', 'PR', 'GN', 'GA', 'GL', 'SC', 'CS', 'NA'];
 
     /**
      * Validate a Sri Lanka Business Registration number.
@@ -20,50 +35,32 @@ class BrValidator
     {
         $br = strtoupper(trim($br));
 
-        // Format: PREFIX + optional slash + digits (5–8 digits)
-        // Examples: PV00123456, PV/00123456, PB12345
-        foreach (self::PREFIXES as $prefix) {
-            if (preg_match('/^' . $prefix . '\/?(\d{5,8})$/', $br)) {
-                return true;
-            }
-        }
+        $prefixes = implode('|', self::PREFIXES);
 
-        return false;
+        return (bool) preg_match('/^(' . $prefixes . ')[\s\/\-]?(\d{5,8})$/', $br);
     }
 
     /**
-     * Normalize BR number (remove slashes, uppercase).
+     * Normalize BR number (uppercase, remove separators).
      */
     public static function normalize(string $br): ?string
     {
         $br = strtoupper(trim($br));
-        $br = str_replace('/', '', $br);
-
         if (!self::validate($br)) {
             return null;
         }
 
-        return $br;
+        return preg_replace('/[\s\/\-]+/', '', $br);
     }
 
     /**
-     * Get the company type from BR prefix.
+     * Get the company type from a valid BR number (or prefix).
      */
     public static function getCompanyType(string $br): ?string
     {
         $br = strtoupper(trim($br));
 
-        $types = [
-            'PV' => 'Private Limited Company',
-            'PB' => 'Public Company',
-            'HP' => 'Foreign Company (Branch)',
-            'SP' => 'Sole Proprietorship',
-            'PR' => 'Partnership',
-            'GN' => 'Guarantee Company',
-            'SC' => 'Unlimited Company',
-        ];
-
-        foreach ($types as $prefix => $type) {
+        foreach (self::TYPES as $prefix => $type) {
             if (str_starts_with($br, $prefix)) {
                 return $type;
             }
@@ -81,8 +78,13 @@ class BrValidator
     {
         $normalized = self::normalize($br);
 
-        if (!$normalized) {
-            return ['valid' => false, 'normalized' => null, 'prefix' => null, 'company_type' => null];
+        if ($normalized === null) {
+            return [
+                'valid'        => false,
+                'normalized'   => null,
+                'prefix'       => null,
+                'company_type' => null,
+            ];
         }
 
         preg_match('/^([A-Z]+)/', $normalized, $m);

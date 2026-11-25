@@ -5,95 +5,146 @@ namespace Trishanapp\LkBusinessValidator\Validators;
 /**
  * Sri Lanka Postal Code Validator
  *
- * All valid Sri Lanka postal codes are 5-digit numbers.
- * Covers all provinces and districts.
+ * Validates 5-digit Sri Lanka postal codes against real Sri Lanka Post
+ * province and district ranges.
  */
 class PostalCodeValidator
 {
     /**
-     * Known valid postal code ranges by province.
-     * Format: [province => [district => [start, end]]]
+     * Valid Sri Lanka postal code ranges by province and district.
+     * Format: [province => [district => list of [start, end] ranges]]
+     *
+     * @var array<string, array<string, list<array{0: int, 1: int}>>>
      */
-    const RANGES = [
-        'Western'       => ['Colombo' => [1, 15], 'Gampaha' => [11000, 11600], 'Kalutara' => [12000, 12750]],
-        'Central'       => ['Kandy' => [20000, 20800], 'Matale' => [21000, 21500], 'NuwaraEliya' => [22000, 22300]],
-        'Southern'      => ['Galle' => [80000, 80650], 'Matara' => [81000, 81600], 'Hambantota' => [82000, 82500]],
-        'Northern'      => ['Jaffna' => [40000, 40600], 'Kilinochchi' => [44000, 44100], 'Mullaitivu' => [43000, 43100], 'Vavuniya' => [43000, 43300], 'Mannar' => [41000, 41100]],
-        'Eastern'       => ['Trincomalee' => [31000, 31200], 'Batticaloa' => [30000, 30200], 'Ampara' => [32000, 32600]],
-        'NorthWestern'  => ['Kurunegala' => [60000, 60800], 'Puttalam' => [61000, 61600]],
-        'NorthCentral'  => ['Anuradhapura' => [50000, 50450], 'Polonnaruwa' => [51000, 51400]],
-        'Uva'           => ['Badulla' => [90000, 90600], 'Monaragala' => [91000, 91600]],
-        'Sabaragamuwa'  => ['Ratnapura' => [70000, 70600], 'Kegalle' => [71000, 71200]],
+    public const RANGES = [
+        'Western' => [
+            'Colombo'  => [[100, 1500], [10000, 10799]],
+            'Gampaha'  => [[11000, 11899]],
+            'Kalutara' => [[12000, 12799]],
+        ],
+        'Central' => [
+            'Kandy'        => [[20000, 20999]],
+            'Matale'       => [[21000, 21599]],
+            'Nuwara Eliya' => [[22000, 22399]],
+        ],
+        'Eastern' => [
+            'Batticaloa'  => [[30000, 30499]],
+            'Trincomalee' => [[31000, 31499]],
+            'Ampara'      => [[32000, 32699]],
+        ],
+        'Northern' => [
+            'Jaffna'      => [[40000, 40699]],
+            'Mannar'      => [[41000, 41299]],
+            'Mullaitivu'  => [[42000, 42199]],
+            'Vavuniya'    => [[43000, 43399]],
+            'Kilinochchi' => [[44000, 44199]],
+        ],
+        'North Central' => [
+            'Anuradhapura' => [[50000, 50599]],
+            'Polonnaruwa'  => [[51000, 51499]],
+        ],
+        'North Western' => [
+            'Kurunegala' => [[60000, 60899]],
+            'Puttalam'   => [[61000, 61699]],
+        ],
+        'Sabaragamuwa' => [
+            'Ratnapura' => [[70000, 70799]],
+            'Kegalle'   => [[71000, 71799]],
+        ],
+        'Southern' => [
+            'Galle'      => [[80000, 80699]],
+            'Matara'     => [[81000, 81799]],
+            'Hambantota' => [[82000, 82699]],
+        ],
+        'Uva' => [
+            'Badulla'    => [[90000, 90699]],
+            'Monaragala' => [[91000, 91699]],
+        ],
     ];
 
     /**
-     * Validate a Sri Lanka postal code.
+     * Validate a Sri Lanka postal code against real Sri Lanka Post ranges.
      */
     public static function validate(string|int $code): bool
     {
-        $code = (string) $code;
-        $code = trim($code);
-
-        // Must be exactly 5 digits
-        if (!preg_match('/^\d{5}$/', $code)) {
-            return false;
-        }
-
-        $num = (int) $code;
-
-        // Colombo city codes: 00100–01500 (written as 1–15 with leading zeros)
-        if ($num >= 100 && $num <= 1500) return true;
-
-        // All others: 10000–99999
-        return $num >= 10000 && $num <= 99999;
+        return self::lookup($code) !== null;
     }
 
     /**
-     * Get province for a postal code (best effort).
+     * Get province for a valid postal code.
      */
     public static function getProvince(string|int $code): ?string
     {
-        $num = (int) $code;
-
-        $map = [
-            [1,       1500,  'Western'],
-            [10000,   15000, 'Western'],
-            [20000,   22999, 'Central'],
-            [30000,   32999, 'Eastern'],
-            [40000,   44999, 'Northern'],
-            [50000,   51999, 'North Central'],
-            [60000,   61999, 'North Western'],
-            [70000,   71999, 'Sabaragamuwa'],
-            [80000,   82999, 'Southern'],
-            [90000,   91999, 'Uva'],
-        ];
-
-        foreach ($map as [$start, $end, $province]) {
-            if ($num >= $start && $num <= $end) {
-                return $province;
-            }
-        }
-
-        return null;
+        return self::lookup($code)['province'] ?? null;
     }
 
     /**
-     * Parse postal code.
+     * Get district for a valid postal code.
+     */
+    public static function getDistrict(string|int $code): ?string
+    {
+        return self::lookup($code)['district'] ?? null;
+    }
+
+    /**
+     * Parse postal code into full details.
      *
-     * @return array{valid: bool, code: string|null, province: string|null}
+     * @return array{valid: bool, code: string|null, province: string|null, district: string|null}
      */
     public static function parse(string|int $code): array
     {
-        $code = trim((string) $code);
+        $match = self::lookup($code);
 
-        if (!self::validate($code)) {
-            return ['valid' => false, 'code' => null, 'province' => null];
+        if ($match === null) {
+            return [
+                'valid'    => false,
+                'code'     => null,
+                'province' => null,
+                'district' => null,
+            ];
         }
 
         return [
             'valid'    => true,
-            'code'     => str_pad($code, 5, '0', STR_PAD_LEFT),
-            'province' => self::getProvince($code),
+            'code'     => $match['code'],
+            'province' => $match['province'],
+            'district' => $match['district'],
         ];
+    }
+
+    /**
+     * @return array{code: string, province: string, district: string}|null
+     */
+    private static function lookup(string|int $code): ?array
+    {
+        if (is_int($code)) {
+            if ($code < 100 || $code > 99999) {
+                return null;
+            }
+            $normalized = str_pad((string) $code, 5, '0', STR_PAD_LEFT);
+        } else {
+            $normalized = trim($code);
+            if (!preg_match('/^\d{5}$/', $normalized)) {
+                return null;
+            }
+        }
+
+        $num = (int) $normalized;
+
+        foreach (self::RANGES as $province => $districts) {
+            foreach ($districts as $district => $ranges) {
+                foreach ($ranges as [$start, $end]) {
+                    if ($num >= $start && $num <= $end) {
+                        return [
+                            'code'     => $normalized,
+                            'province' => $province,
+                            'district' => $district,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }
