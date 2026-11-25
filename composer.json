@@ -1,7 +1,7 @@
 {
     "name": "trishanapp/lk-business-validator",
-    "description": "Validate Sri Lanka business data: NIC, BR numbers, phone numbers, postal codes, VAT/TIN, and more.",
-    "keywords": ["sri lanka", "validator", "nic", "business registration", "php", "laravel"],
+    "description": "Validate Sri Lanka business data: NIC, BR numbers, phone numbers, postal codes, VAT/TIN, vehicle numbers, passports, bank codes, and EPF/ETF.",
+    "keywords": ["sri lanka", "validator", "nic", "business registration", "phone", "vat", "tin", "vehicle", "passport", "epf", "php", "laravel"],
     "homepage": "https://github.com/trishanapp/lk-business-validator",
     "license": "MIT",
     "authors": [
@@ -18,6 +18,10 @@
     "require-dev": {
         "phpunit/phpunit": "^10.0"
     },
+    "suggest": {
+        "illuminate/support": "Required for Laravel ServiceProvider and Facade integration (^9.0|^10.0|^11.0|^12.0)",
+        "illuminate/validation": "Required for Laravel validation rules (^9.0|^10.0|^11.0|^12.0)"
+    },
     "autoload": {
         "psr-4": {
             "Trishanapp\\LkBusinessValidator\\": "src/"
@@ -28,11 +32,17 @@
             "Trishanapp\\LkBusinessValidator\\Tests\\": "tests/"
         }
     },
+    "scripts": {
+        "test": "phpunit"
+    },
     "extra": {
         "laravel": {
             "providers": [
                 "Trishanapp\\LkBusinessValidator\\LkValidatorServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "LkValidator": "Trishanapp\\LkBusinessValidator\\Facades\\LkValidator"
+            }
         }
     },
     "minimum-stability": "stable",
