@@ -7,46 +7,48 @@ use Trishanapp\LkBusinessValidator\Validators\BrValidator;
 
 class BrValidatorTest extends TestCase
 {
-    public function test_valid_pv_format(): void
+    public function test_valid_formats(): void
     {
         $this->assertTrue(BrValidator::validate('PV00123456'));
-    }
-
-    public function test_valid_with_slash(): void
-    {
         $this->assertTrue(BrValidator::validate('PV/00123456'));
-    }
-
-    public function test_valid_pb_format(): void
-    {
+        $this->assertTrue(BrValidator::validate('PV-00123456'));
+        $this->assertTrue(BrValidator::validate('PV 00123456'));
         $this->assertTrue(BrValidator::validate('PB12345'));
+        $this->assertTrue(BrValidator::validate('GA12345'));
+        $this->assertTrue(BrValidator::validate('FC123456'));
+        $this->assertTrue(BrValidator::validate('cs12345'));
     }
 
-    public function test_invalid_unknown_prefix(): void
+    public function test_invalid_formats(): void
     {
         $this->assertFalse(BrValidator::validate('XX12345678'));
-    }
-
-    public function test_invalid_too_short_digits(): void
-    {
         $this->assertFalse(BrValidator::validate('PV1234'));
+        $this->assertFalse(BrValidator::validate('PV123456789'));
+        $this->assertFalse(BrValidator::validate(''));
     }
 
-    public function test_get_company_type_private(): void
+    public function test_normalize(): void
     {
-        $this->assertEquals('Private Limited Company', BrValidator::getCompanyType('PV00123456'));
+        $this->assertSame('PV00123456', BrValidator::normalize('pv/00123456'));
+        $this->assertSame('PV00123456', BrValidator::normalize('PV-00123456'));
+        $this->assertSame('PV00123456', BrValidator::normalize('PV 00123456'));
+        $this->assertNull(BrValidator::normalize('XX12345'));
     }
 
-    public function test_get_company_type_partnership(): void
+    public function test_get_company_type(): void
     {
-        $this->assertEquals('Partnership', BrValidator::getCompanyType('PR00123456'));
+        $this->assertSame('Private Limited Company', BrValidator::getCompanyType('PV00123456'));
+        $this->assertSame('Partnership', BrValidator::getCompanyType('PR00123456'));
+        $this->assertSame('Guarantee Company', BrValidator::getCompanyType('GA12345'));
+        $this->assertSame('Overseas Company', BrValidator::getCompanyType('FC12345'));
     }
 
     public function test_parse_returns_details(): void
     {
-        $result = BrValidator::parse('PV00123456');
+        $result = BrValidator::parse('PV/00123456');
         $this->assertTrue($result['valid']);
-        $this->assertEquals('PV', $result['prefix']);
-        $this->assertEquals('Private Limited Company', $result['company_type']);
+        $this->assertSame('PV00123456', $result['normalized']);
+        $this->assertSame('PV', $result['prefix']);
+        $this->assertSame('Private Limited Company', $result['company_type']);
     }
 }
